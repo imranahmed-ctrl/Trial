@@ -1,35 +1,66 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { useState } from 'react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import ErrorBoundary from './components/common/ErrorBoundary';
+import Navbar from './components/common/Navbar';
+import Login from './pages/Auth/Login';
+import Signup from './pages/Auth/Signup';
+import LearnerDashboard from './pages/Learner/LearnerDashboard';
+import ContributorDashboard from './pages/Contributor/ContributorDashboard';
+import AdminDashboard from './pages/Admin/AdminDashboard';
+import LoadingSpinner from './components/common/LoadingSpinner';
+import './styles/App.css';
 
-function App() {
-  const [count, setCount] = useState(0)
+const AppContent = () => {
+  const { user, loading } = useAuth();
+  const [isLogin, setIsLogin] = useState(true);
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  if (!user) {
+    return (
+      <div className="auth-page">
+        {isLogin ? (
+          <Login onSwitchToSignup={() => setIsLogin(false)} />
+        ) : (
+          <Signup onSwitchToLogin={() => setIsLogin(true)} />
+        )}
+      </div>
+    );
+  }
+
+  const renderDashboard = () => {
+    switch (user.role) {
+      case 'learner':
+        return <LearnerDashboard user={user} />;
+      case 'contributor':
+        return <ContributorDashboard user={user} />;
+      case 'admin':
+        return <AdminDashboard user={user} />;
+      default:
+        return <div>Invalid role</div>;
+    }
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div className="App">
+      <Navbar user={user} />
+      <main className="main-content">
+        {renderDashboard()}
+      </main>
+    </div>
+  );
+};
+
+function App() {
+  return (
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ErrorBoundary>
+  );
 }
 
-export default App
+export default App;
